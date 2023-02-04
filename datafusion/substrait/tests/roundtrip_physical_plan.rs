@@ -18,6 +18,7 @@
 #[cfg(test)]
 mod tests {
     use datafusion::arrow::datatypes::Schema;
+    use datafusion::datasource::listing::PartitionedFile;
     use datafusion::datasource::object_store::ObjectStoreUrl;
     use datafusion::error::Result;
     use datafusion::physical_plan::file_format::{FileScanConfig, ParquetExec};
@@ -33,7 +34,10 @@ mod tests {
         let scan_config = FileScanConfig {
             object_store_url: ObjectStoreUrl::local_filesystem(),
             file_schema: Arc::new(Schema::empty()),
-            file_groups: vec![],
+            file_groups: vec![vec![PartitionedFile::new(
+                "file://foo/bar.parquet".to_string(),
+                123,
+            )]],
             statistics: Default::default(),
             projection: None,
             limit: None,
@@ -64,6 +68,7 @@ mod tests {
         let a = format!("{}", displayable(parquet_exec.as_ref()).indent());
         let b = format!("{}", displayable(parquet_exec2.as_ref()).indent());
 
+        println!("{}", a);
         assert_eq!(a, b);
 
         Ok(())

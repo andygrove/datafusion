@@ -39,7 +39,7 @@ use substrait::proto::{
 /// Convert Substrait Rel to DataFusion LogicalPlan
 #[async_recursion]
 pub async fn from_substrait_rel(
-    ctx: &mut SessionContext,
+    _ctx: &mut SessionContext,
     rel: &Rel,
     _extensions: &HashMap<u32, &String>,
 ) -> Result<Arc<dyn ExecutionPlan>> {
@@ -65,8 +65,18 @@ pub async fn from_substrait_rel(
                         table: &nt.names[2],
                     },
                 };
-                let t = ctx.table(table_reference).await?;
-                let t = t.into_optimized_plan()?;
+                let object_store_url = ObjectStoreUrl::parse(&table_reference.table())?;
+                let mut base_config = FileScanConfig {
+                    object_store_url,
+                    file_schema: Arc::new(Schema::empty()),
+                    file_groups: vec![],
+                    statistics: Default::default(),
+                    projection: None,
+                    limit: None,
+                    table_partition_cols: vec![],
+                    output_ordering: None,
+                    infinite_source: false,
+                };
                 match &read.projection {
                     Some(MaskExpression { select, .. }) => match &select.as_ref() {
                         Some(projection) => {
@@ -75,50 +85,14 @@ pub async fn from_substrait_rel(
                                 .iter()
                                 .map(|item| item.field as usize)
                                 .collect();
-                            match &t {
-                                LogicalPlan::TableScan(_scan) => {
-                                    // let fields: Vec<Field> = column_indices
-                                    //     .iter()
-                                    //     .map(|i| scan.projected_schema.field(*i).clone())
-                                    //     .collect();
-                                    // clippy thinks this clone is redundant but it is not
-                                    #[allow(clippy::redundant_clone)]
-                                    // let mut scan = scan.clone();
-                                    // scan.projection = Some(column_indices);
-                                    // scan.projected_schema =
-                                    //     DFSchemaRef::new(DFSchema::new_with_metadata(
-                                    //         fields,
-                                    //         HashMap::new(),
-                                    //     )?);
-                                    let base_config = FileScanConfig {
-                                        object_store_url: ObjectStoreUrl::parse("TODO")?,
-                                        file_schema: Arc::new(Schema::empty()),
-                                        file_groups: vec![],
-                                        statistics: Default::default(),
-                                        projection: Some(column_indices),
-                                        limit: None,
-                                        table_partition_cols: vec![],
-                                        output_ordering: None,
-                                        infinite_source: false,
-                                    };
-                                    Ok(
-                                        Arc::new(ParquetExec::new(
-                                            base_config,
-                                            None,
-                                            None,
-                                        ))
-                                            as Arc<dyn ExecutionPlan>,
-                                    )
-                                }
-                                _ => Err(DataFusionError::Internal(
-                                    "unexpected plan for table".to_string(),
-                                )),
-                            }
+                            base_config.projection = Some(column_indices);
                         }
-                        _ => todo!(),
+                        _ => {}
                     },
-                    _ => todo!(),
+                    _ => {}
                 }
+                Ok(Arc::new(ParquetExec::new(base_config, None, None))
+                    as Arc<dyn ExecutionPlan>)
             }
             _ => Err(DataFusionError::NotImplemented(
                 "Only NamedTable reads are supported".to_string(),
