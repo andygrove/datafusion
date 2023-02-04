@@ -92,7 +92,7 @@ pub struct ParquetExec {
     /// Base configuraton for this scan
     base_config: FileScanConfig,
     projected_statistics: Statistics,
-    projected_schema: SchemaRef,
+    pub projected_schema: SchemaRef,
     /// Execution metrics
     metrics: ExecutionPlanMetricsSet,
     /// Optional predicate for row filtering during parquet scan
