@@ -35,7 +35,7 @@ itertools = "0.10.5"
 object_store = "0.5.4"
 prost = "0.11"
 prost-types = "0.11"
-substrait = "0.4"
+substrait = "0.5"
 tokio = "1.17"
 
 [build-dependencies]
