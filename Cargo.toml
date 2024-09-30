@@ -124,7 +124,7 @@ log = "^0.4"
 num_cpus = "1.13.0"
 object_store = { version = "0.10.2", default-features = false }
 parking_lot = "0.12"
-parquet = { version = "52.2.0", default-features = false, features = [
+parquet = { version = "53.0.0", default-features = false, features = [
     "arrow",
     "async",
     "object_store",
