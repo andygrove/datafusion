@@ -66,3 +66,17 @@ assert_cmd = "2.0"
 ctor = "0.2.0"
 predicates = "3.0"
 rstest = "0.22"
+
+[patch.crates-io]
+arrow = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-array = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-buffer = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-cast = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-data = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-ipc = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-schema = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-select = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-string = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-ord = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+arrow-flight = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
+parquet = { git = "https://github.com/apache/arrow-rs.git", rev = "a303fefe134213cb1afefcc8f62e4ff9e2e78ea8" }
