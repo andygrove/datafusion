@@ -1347,9 +1347,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.28"
+version = "4.5.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e77c3243bd94243c03672cb5154667347c457ca271254724f9f393aee1c05ff"
+checksum = "92b7b18d71fad5313a1e320fa9897994228ce274b60faa4d694fe0ea89cd9e6d"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -1357,9 +1357,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.27"
+version = "4.5.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b26884eb4b57140e4d2d93652abfa49498b938b3c9179f9fc487b0acc3edad7"
+checksum = "a35db2071778a7344791a4fb4f95308b5673d219dee3ae348b86642574ecc90c"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1551,7 +1551,7 @@ dependencies = [
  "anes",
  "cast",
  "ciborium",
- "clap 4.5.28",
+ "clap 4.5.30",
  "criterion-plot",
  "futures",
  "is-terminal",
@@ -1861,7 +1861,7 @@ dependencies = [
  "async-trait",
  "aws-config",
  "aws-credential-types",
- "clap 4.5.28",
+ "clap 4.5.30",
  "ctor",
  "datafusion",
  "dirs",
@@ -2334,7 +2334,7 @@ dependencies = [
  "bigdecimal",
  "bytes",
  "chrono",
- "clap 4.5.28",
+ "clap 4.5.30",
  "datafusion",
  "env_logger",
  "futures",
@@ -3683,7 +3683,7 @@ checksum = "5297962ef19edda4ce33aaa484386e0a5b3d7f2f4e037cbeee00503ef6b29d33"
 dependencies = [
  "anstream",
  "anstyle",
- "clap 4.5.28",
+ "clap 4.5.30",
  "escape8259",
 ]
 
