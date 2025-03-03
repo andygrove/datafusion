@@ -42,7 +42,7 @@ async-compression = { version = "0.4.0", features = [
     "tokio",
 ], optional = true }
 bytes = { workspace = true }
-bzip2 = { version = "0.5.0", optional = true }
+bzip2 = { version = "0.5.2", optional = true }
 chrono = { workspace = true }
 datafusion-catalog = { workspace = true }
 datafusion-common = { workspace = true, features = ["object_store"] }
