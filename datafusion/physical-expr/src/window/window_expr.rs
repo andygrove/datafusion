@@ -276,11 +276,12 @@ pub trait AggregateWindowExpr: WindowExpr {
         not_end: bool,
     ) -> Result<ArrayRef> {
         let values = self.evaluate_args(record_batch)?;
+        let length = values[0].len();
 
         if self.is_constant_in_partition() {
             accumulator.update_batch(&values)?;
             let value = accumulator.evaluate()?;
-            return value.to_array_of_size(record_batch.num_rows());
+            return value.to_array_of_size(length - idx);
         }
         let order_bys = get_orderby_values(self.order_by_columns(record_batch)?);
         let most_recent_row_order_bys = most_recent_row
@@ -289,7 +290,6 @@ pub trait AggregateWindowExpr: WindowExpr {
             .map(get_orderby_values);
 
         // We iterate on each row to perform a running calculation.
-        let length = values[0].len();
         let mut row_wise_results: Vec<ScalarValue> = vec![];
         let is_causal = self.get_window_frame().is_causal();
         while idx < length {
