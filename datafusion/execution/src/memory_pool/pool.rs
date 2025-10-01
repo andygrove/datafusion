@@ -460,14 +460,14 @@ impl<I: MemoryPool> MemoryPool for TrackConsumersPool<I> {
             .try_grow(reservation, additional)
             .map_err(|e| match e {
                 DataFusionError::ResourcesExhausted(e) => {
-                    DataFusionError::ResourcesExhausted(format!(
+                    panic!(
                         "try_grow failed for {}: {}",
                         reservation.consumer().name,
                         provide_top_memory_consumers_to_error_msg(
                             e,
                             self.report_top(self.top.into()),
                         )
-                    ))
+                    );
                 }
                 _ => e,
             })?;
