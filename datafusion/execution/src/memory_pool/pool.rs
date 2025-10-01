@@ -20,7 +20,7 @@ use crate::memory_pool::{
 };
 use datafusion_common::HashMap;
 use datafusion_common::{resources_datafusion_err, DataFusionError, Result};
-use log::debug;
+use log::{debug, error};
 use parking_lot::Mutex;
 use std::{
     num::NonZeroUsize,
@@ -456,9 +456,10 @@ impl<I: MemoryPool> MemoryPool for TrackConsumersPool<I> {
     }
 
     fn try_grow(&self, reservation: &MemoryReservation, additional: usize) -> Result<()> {
-        self.inner
-            .try_grow(reservation, additional)
-            .map_err(|e| match e {
+        self.inner.try_grow(reservation, additional).map_err(|e| {
+            error!("try_grow failed for {}", reservation.consumer().name);
+
+            match e {
                 DataFusionError::ResourcesExhausted(e) => {
                     // wrap OOM message in top consumers
                     DataFusionError::ResourcesExhausted(
@@ -469,7 +470,8 @@ impl<I: MemoryPool> MemoryPool for TrackConsumersPool<I> {
                     )
                 }
                 _ => e,
-            })?;
+            }
+        })?;
 
         self.tracked_consumers
             .lock()
