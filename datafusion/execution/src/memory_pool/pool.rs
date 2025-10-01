@@ -456,22 +456,21 @@ impl<I: MemoryPool> MemoryPool for TrackConsumersPool<I> {
     }
 
     fn try_grow(&self, reservation: &MemoryReservation, additional: usize) -> Result<()> {
-        self.inner.try_grow(reservation, additional).map_err(|e| {
-            error!("try_grow failed for {}", reservation.consumer().name);
-
-            match e {
+        self.inner
+            .try_grow(reservation, additional)
+            .map_err(|e| match e {
                 DataFusionError::ResourcesExhausted(e) => {
-                    // wrap OOM message in top consumers
-                    DataFusionError::ResourcesExhausted(
+                    DataFusionError::ResourcesExhausted(format!(
+                        "try_grow failed for {}: {}",
+                        reservation.consumer().name,
                         provide_top_memory_consumers_to_error_msg(
                             e,
                             self.report_top(self.top.into()),
-                        ),
-                    )
+                        )
+                    ))
                 }
                 _ => e,
-            }
-        })?;
+            })?;
 
         self.tracked_consumers
             .lock()
