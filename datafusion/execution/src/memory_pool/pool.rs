@@ -454,7 +454,7 @@ impl<I: MemoryPool> MemoryPool for TrackConsumersPool<I> {
                 tracked_consumer.shrink(shrink);
             });
     }
-rm
+
     fn try_grow(&self, reservation: &MemoryReservation, additional: usize) -> Result<()> {
         self.inner
             .try_grow(reservation, additional)
