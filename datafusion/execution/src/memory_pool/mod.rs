@@ -380,6 +380,10 @@ impl MemoryReservation {
     ///
     /// Panics if `capacity` exceeds [`Self::size`]
     pub fn shrink(&mut self, capacity: usize) {
+        println!(
+            "MemoryReservation[{}].shrink({capacity})",
+            self.consumer().name
+        );
         let new_size = self.size.checked_sub(capacity).unwrap();
         self.registration.pool.shrink(self, capacity);
         self.size = new_size
@@ -390,6 +394,10 @@ impl MemoryReservation {
     /// Returns new reservation size
     /// or error if shrinking capacity is more than allocated size
     pub fn try_shrink(&mut self, capacity: usize) -> Result<usize> {
+        println!(
+            "MemoryReservation[{}].try_shrink({capacity})",
+            self.consumer().name
+        );
         if let Some(new_size) = self.size.checked_sub(capacity) {
             self.registration.pool.shrink(self, capacity);
             self.size = new_size;
@@ -404,6 +412,10 @@ impl MemoryReservation {
 
     /// Sets the size of this reservation to `capacity`
     pub fn resize(&mut self, capacity: usize) {
+        println!(
+            "MemoryReservation[{}].resize({capacity})",
+            self.consumer().name
+        );
         match capacity.cmp(&self.size) {
             Ordering::Greater => self.grow(capacity - self.size),
             Ordering::Less => self.shrink(self.size - capacity),
@@ -413,6 +425,10 @@ impl MemoryReservation {
 
     /// Try to set the size of this reservation to `capacity`
     pub fn try_resize(&mut self, capacity: usize) -> Result<()> {
+        println!(
+            "MemoryReservation[{}].try_resize({capacity})",
+            self.consumer().name
+        );
         match capacity.cmp(&self.size) {
             Ordering::Greater => self.try_grow(capacity - self.size)?,
             Ordering::Less => self.shrink(self.size - capacity),
@@ -423,6 +439,10 @@ impl MemoryReservation {
 
     /// Increase the size of this reservation by `capacity` bytes
     pub fn grow(&mut self, capacity: usize) {
+        println!(
+            "MemoryReservation[{}].grow({capacity})",
+            self.consumer().name
+        );
         self.registration.pool.grow(self, capacity);
         self.size += capacity;
     }
@@ -431,6 +451,10 @@ impl MemoryReservation {
     /// bytes, returning error if there is insufficient capacity left
     /// in the pool.
     pub fn try_grow(&mut self, capacity: usize) -> Result<()> {
+        println!(
+            "MemoryReservation[{}].try_grow({capacity})",
+            self.consumer().name
+        );
         self.registration.pool.try_grow(self, capacity)?;
         self.size += capacity;
         Ok(())

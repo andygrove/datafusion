@@ -20,7 +20,7 @@ use crate::memory_pool::{
 };
 use datafusion_common::HashMap;
 use datafusion_common::{resources_datafusion_err, DataFusionError, Result};
-use log::{debug, error};
+use log::{debug};
 use parking_lot::Mutex;
 use std::{
     num::NonZeroUsize,
