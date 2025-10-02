@@ -454,20 +454,20 @@ impl<I: MemoryPool> MemoryPool for TrackConsumersPool<I> {
                 tracked_consumer.shrink(shrink);
             });
     }
-
+rm
     fn try_grow(&self, reservation: &MemoryReservation, additional: usize) -> Result<()> {
         self.inner
             .try_grow(reservation, additional)
             .map_err(|e| match e {
                 DataFusionError::ResourcesExhausted(e) => {
-                    panic!(
-                        "try_grow failed for {}: {}",
-                        reservation.consumer().name,
+                    // wrap OOM message in top consumers
+                    DataFusionError::ResourcesExhausted(
                         provide_top_memory_consumers_to_error_msg(
+                            &reservation.consumer().name,
                             e,
                             self.report_top(self.top.into()),
-                        )
-                    );
+                        ),
+                    )
                 }
                 _ => e,
             })?;
@@ -491,10 +491,11 @@ impl<I: MemoryPool> MemoryPool for TrackConsumersPool<I> {
 }
 
 fn provide_top_memory_consumers_to_error_msg(
+    consumer_name: &str,
     error_msg: String,
     top_consumers: String,
 ) -> String {
-    format!("Additional allocation failed with top memory consumers (across reservations) as:\n{top_consumers}\nError: {error_msg}")
+    format!("Additional allocation failed for {consumer_name} with top memory consumers (across reservations) as:\n{top_consumers}\nError: {error_msg}")
 }
 
 #[cfg(test)]
