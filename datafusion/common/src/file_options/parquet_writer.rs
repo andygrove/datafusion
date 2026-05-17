@@ -208,6 +208,7 @@ impl ParquetOptions {
             schema_force_view_types: _,
             binary_as_string: _, // not used for writer props
             coerce_int96: _,     // not used for writer props
+            coerce_int96_tz: _,  // not used for writer props
             skip_arrow_metadata: _,
             max_predicate_cache_size: _,
         } = self;

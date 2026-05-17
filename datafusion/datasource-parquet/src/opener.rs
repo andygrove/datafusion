@@ -119,6 +119,10 @@ pub(super) struct ParquetMorselizer {
     pub enable_row_group_stats_pruning: bool,
     /// Coerce INT96 timestamps to specific TimeUnit
     pub coerce_int96: Option<TimeUnit>,
+    /// Optional timezone applied to INT96-coerced timestamps. When `Some`, the
+    /// coerced column type becomes `Timestamp(<coerce_int96>, Some(<tz>))`.
+    /// No effect when `coerce_int96` is `None`.
+    pub coerce_int96_tz: Option<Arc<str>>,
     /// Optional parquet FileDecryptionProperties
     #[cfg(feature = "parquet_encryption")]
     pub file_decryption_properties: Option<Arc<FileDecryptionProperties>>,
@@ -281,6 +285,7 @@ struct PreparedParquetOpen {
     enable_row_group_stats_pruning: bool,
     limit: Option<usize>,
     coerce_int96: Option<TimeUnit>,
+    coerce_int96_tz: Option<Arc<str>>,
     expr_adapter_factory: Arc<dyn PhysicalExprAdapterFactory>,
     predicate_creation_errors: Count,
     max_predicate_cache_size: Option<usize>,
@@ -651,6 +656,7 @@ impl ParquetMorselizer {
             enable_row_group_stats_pruning: self.enable_row_group_stats_pruning,
             limit: self.limit,
             coerce_int96: self.coerce_int96,
+            coerce_int96_tz: self.coerce_int96_tz.clone(),
             expr_adapter_factory: Arc::clone(&self.expr_adapter_factory),
             predicate_creation_errors,
             max_predicate_cache_size: self.max_predicate_cache_size,
@@ -782,6 +788,7 @@ impl MetadataLoadedParquetOpen {
                 reader_metadata.parquet_schema(),
                 &physical_file_schema,
                 coerce,
+                prepared.coerce_int96_tz.clone(),
             )
         {
             physical_file_schema = Arc::new(merged);
@@ -1748,6 +1755,7 @@ mod test {
                 enable_bloom_filter: self.enable_bloom_filter,
                 enable_row_group_stats_pruning: self.enable_row_group_stats_pruning,
                 coerce_int96: self.coerce_int96,
+                coerce_int96_tz: None,
                 #[cfg(feature = "parquet_encryption")]
                 file_decryption_properties: None,
                 expr_adapter_factory: Arc::new(DefaultPhysicalExprAdapterFactory),

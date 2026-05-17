@@ -713,10 +713,17 @@ pub fn apply_file_schema_type_coercions(
 }
 
 /// Coerces the file schema's Timestamps to the provided TimeUnit if Parquet schema contains INT96.
+///
+/// When `timezone` is `Some`, INT96-derived columns coerce to
+/// `Timestamp(time_unit, Some(timezone))`; otherwise they coerce to
+/// `Timestamp(time_unit, None)` (the historical default). Spark and other
+/// systems write INT96 as UTC-adjusted instants, so callers that need the
+/// resulting Arrow type to be timezone-aware should pass `Some("UTC".into())`.
 pub fn coerce_int96_to_resolution(
     parquet_schema: &SchemaDescriptor,
     file_schema: &Schema,
     time_unit: &TimeUnit,
+    timezone: Option<Arc<str>>,
 ) -> Option<Schema> {
     // Traverse the parquet_schema columns looking for int96 physical types. If encountered, insert
     // the field's full path into a set.
@@ -879,11 +886,11 @@ pub fn coerce_int96_to_resolution(
                 (DataType::Timestamp(TimeUnit::Nanosecond, None), None)
                     if int96_fields.contains(parquet_path.concat().as_str()) =>
                 // We found a timestamp(nanos) and it originated as int96. Coerce it to the correct
-                // time_unit.
+                // time_unit, optionally attaching the requested timezone.
                 {
                     parent_fields.borrow_mut().push(field_with_new_type(
                         current_field,
-                        DataType::Timestamp(*time_unit, None),
+                        DataType::Timestamp(*time_unit, timezone.clone()),
                     ));
                 }
                 // Other types can be cloned as they are.
@@ -1852,7 +1859,7 @@ mod tests {
         let arrow_schema = parquet_to_arrow_schema(&descr, None).unwrap();
 
         let result =
-            coerce_int96_to_resolution(&descr, &arrow_schema, &TimeUnit::Microsecond)
+            coerce_int96_to_resolution(&descr, &arrow_schema, &TimeUnit::Microsecond, None)
                 .unwrap();
 
         // Only the first field (c0) should be converted to a microsecond timestamp because it's the
@@ -1939,7 +1946,7 @@ mod tests {
         let arrow_schema = parquet_to_arrow_schema(&descr, None).unwrap();
 
         let result =
-            coerce_int96_to_resolution(&descr, &arrow_schema, &TimeUnit::Microsecond)
+            coerce_int96_to_resolution(&descr, &arrow_schema, &TimeUnit::Microsecond, None)
                 .unwrap();
 
         let expected_schema = Schema::new(vec![
