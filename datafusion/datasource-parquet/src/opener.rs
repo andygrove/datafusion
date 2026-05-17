@@ -21,7 +21,7 @@ use crate::page_filter::PagePruningAccessPlanFilter;
 use crate::row_group_filter::RowGroupAccessPlanFilter;
 use crate::{
     ParquetAccessPlan, ParquetFileMetrics, ParquetFileReaderFactory,
-    apply_file_schema_type_coercions, coerce_int96_to_resolution, row_filter,
+    apply_file_schema_type_coercions, coerce_int96_to_resolution_with_tz, row_filter,
 };
 use arrow::array::{RecordBatch, RecordBatchOptions};
 use arrow::datatypes::DataType;
@@ -106,6 +106,10 @@ pub(super) struct ParquetOpener {
     pub enable_row_group_stats_pruning: bool,
     /// Coerce INT96 timestamps to specific TimeUnit
     pub coerce_int96: Option<TimeUnit>,
+    /// Optional timezone applied to INT96-coerced timestamps. When `Some`, the
+    /// coerced column type becomes `Timestamp(<coerce_int96>, Some(<tz>))`.
+    /// No effect when `coerce_int96` is `None`.
+    pub coerce_int96_tz: Option<Arc<str>>,
     /// Optional parquet FileDecryptionProperties
     #[cfg(feature = "parquet_encryption")]
     pub file_decryption_properties: Option<Arc<FileDecryptionProperties>>,
@@ -264,6 +268,7 @@ impl FileOpener for ParquetOpener {
         let pushdown_filters = self.pushdown_filters;
         let force_filter_selections = self.force_filter_selections;
         let coerce_int96 = self.coerce_int96;
+        let coerce_int96_tz = self.coerce_int96_tz.clone();
         let enable_bloom_filter = self.enable_bloom_filter;
         let enable_row_group_stats_pruning = self.enable_row_group_stats_pruning;
         let limit = self.limit;
@@ -389,10 +394,11 @@ impl FileOpener for ParquetOpener {
             }
 
             if let Some(ref coerce) = coerce_int96
-                && let Some(merged) = coerce_int96_to_resolution(
+                && let Some(merged) = coerce_int96_to_resolution_with_tz(
                     reader_metadata.parquet_schema(),
                     &physical_file_schema,
                     coerce,
+                    coerce_int96_tz.as_ref(),
                 )
             {
                 physical_file_schema = Arc::new(merged);
@@ -1201,6 +1207,7 @@ mod test {
                 enable_bloom_filter: self.enable_bloom_filter,
                 enable_row_group_stats_pruning: self.enable_row_group_stats_pruning,
                 coerce_int96: self.coerce_int96,
+                coerce_int96_tz: None,
                 #[cfg(feature = "parquet_encryption")]
                 file_decryption_properties: None,
                 expr_adapter_factory: Arc::new(DefaultPhysicalExprAdapterFactory),
