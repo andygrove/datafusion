@@ -15,7 +15,7 @@ use sqlparser::ast::{
     ExprWithAlias as SQLExprWithAlias, JsonPath, JsonPathElem, MapEntry, Spanned,
     StructField, Subscript, TrimWhereField, TypedString, Value, ValueWithSpan,
 };
-use sqlparser::ast::{Query, Visit, Visitor};
+use sqlparser::ast::{InTarget, Query, Visit, Visitor};
 
 use datafusion_common::{
     DFSchema, Diagnostic, HashMap, Result, ScalarValue, Span, internal_datafusion_err,
@@ -580,10 +580,11 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 )?),
             ))),
 
-            SQLExpr::InList {
+            SQLExpr::In {
                 expr,
-                list,
+                target: InTarget::List(list),
                 negated,
+                global: false,
             } => self.sql_in_list_to_expr(*expr, list, negated, schema, planner_context),
 
             SQLExpr::Like {
@@ -728,10 +729,11 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
             SQLExpr::Exists { subquery, negated } => {
                 self.parse_exists_subquery(*subquery, negated, schema, planner_context)
             }
-            SQLExpr::InSubquery {
+            SQLExpr::In {
                 expr,
-                subquery,
+                target: InTarget::Subquery(subquery),
                 negated,
+                global: false,
             } => {
                 self.parse_in_subquery(*expr, *subquery, negated, schema, planner_context)
             }

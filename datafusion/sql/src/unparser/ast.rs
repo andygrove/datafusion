@@ -639,7 +639,13 @@ impl TableRelationBuilder {
             with_ordinality: false,
             json_path: None,
             sample: None,
-            index_hints: self.index_hints.clone(),
+            index_directives: self
+                .index_hints
+                .iter()
+                .cloned()
+                .map(ast::TableIndexDirective::MySql)
+                .collect(),
+            inheritance: None,
         })
     }
     fn create_empty() -> Self {

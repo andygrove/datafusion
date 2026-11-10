@@ -155,6 +155,9 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                     .asof_join_using(right, keys, match_condition)?
                     .build()
             }
+            JoinConstraint::UsingAlias(_, _) => {
+                not_impl_err!("JOIN USING with an alias is not supported")
+            }
             JoinConstraint::None => LogicalPlanBuilder::from(left)
                 .asof_join_on(right, None, match_condition)?
                 .build(),
@@ -236,6 +239,9 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                         .join_using(right, join_type, keys)?
                         .build()
                 }
+            }
+            JoinConstraint::UsingAlias(_, _) => {
+                not_impl_err!("JOIN USING with an alias is not supported")
             }
             JoinConstraint::None => LogicalPlanBuilder::from(left)
                 .join_on(right, join_type, [])?

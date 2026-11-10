@@ -203,6 +203,7 @@ fn calc_inline_constraints_from_columns(columns: &[ColumnDef]) -> Vec<TableConst
                 | ast::ColumnOption::OnUpdate(_)
                 | ast::ColumnOption::Materialized(_)
                 | ast::ColumnOption::Ephemeral(_)
+                | ast::ColumnOption::GenericOptions(_)
                 | ast::ColumnOption::Identity(_)
                 | ast::ColumnOption::OnConflict(_)
                 | ast::ColumnOption::Policy(_)
@@ -312,7 +313,7 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 constraints,
                 if_not_exists,
                 or_replace,
-                without_rowid,
+                sqlite_table_options,
                 like,
                 clone,
                 comment,
@@ -323,7 +324,6 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 partition_by,
                 cluster_by,
                 clustered_by,
-                strict,
                 copy_grants,
                 enable_schema_evolution,
                 change_tracking,
@@ -401,8 +401,8 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 if location.is_some() {
                     return not_impl_err!("Location not supported");
                 }
-                if without_rowid {
-                    return not_impl_err!("Without rowid not supported");
+                if !sqlite_table_options.options.is_empty() {
+                    return not_impl_err!("SQLite table options not supported");
                 }
                 if like.is_some() {
                     return not_impl_err!("Like not supported");
@@ -433,9 +433,6 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 }
                 if clustered_by.is_some() {
                     return not_impl_err!("Clustered by not supported");
-                }
-                if strict {
-                    return not_impl_err!("Strict not supported");
                 }
                 if copy_grants {
                     return not_impl_err!("Copy grants not supported");
@@ -1069,6 +1066,8 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 has_table_keyword,
                 settings,
                 format_clause,
+                by_name,
+                overriding,
                 insert_token: _, // record the location the `INSERT` token
                 optimizer_hints,
                 output,
@@ -1133,6 +1132,12 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 if settings.is_some() {
                     plan_err!("Inserts with settings not supported")?;
                 }
+                if by_name {
+                    plan_err!("Insert-by-name clause not supported")?;
+                }
+                if overriding.is_some() {
+                    plan_err!("Insert-overriding clause not supported")?;
+                }
                 if format_clause.is_some() {
                     plan_err!("Inserts with format clause not supported")?;
                 }
@@ -1163,6 +1168,8 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 or,
                 limit,
                 update_token: _,
+                on_cluster,
+                settings,
                 optimizer_hints,
                 output,
                 order_by,
@@ -1186,6 +1193,12 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                     return not_impl_err!("UPDATE ... FROM is not supported");
                 }
 
+                if on_cluster.is_some() {
+                    plan_err!("Update ON CLUSTER clause not supported")?;
+                }
+                if settings.is_some() {
+                    plan_err!("Update SETTINGS clause not supported")?;
+                }
                 if returning.is_some() {
                     plan_err!("Update-returning clause not yet supported")?;
                 }
@@ -1216,6 +1229,8 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 order_by,
                 limit,
                 delete_token: _,
+                on_cluster,
+                settings,
                 optimizer_hints,
                 output,
             }) => {
@@ -1227,6 +1242,12 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                     plan_err!("Using clause not supported")?;
                 }
 
+                if on_cluster.is_some() {
+                    plan_err!("Delete ON CLUSTER clause not supported")?;
+                }
+                if settings.is_some() {
+                    plan_err!("Delete SETTINGS clause not supported")?;
+                }
                 if returning.is_some() {
                     plan_err!("Delete-returning clause not yet supported")?;
                 }
@@ -1469,6 +1490,11 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                             ast::CreateFunctionBody::AsBeginEnd(_) => {
                                 return not_impl_err!(
                                     "BEGIN/END enclosed function body syntax is not supported"
+                                )?;
+                            }
+                            ast::CreateFunctionBody::BeginAtomic(_) => {
+                                return not_impl_err!(
+                                    "BEGIN ATOMIC function body syntax is not supported"
                                 )?;
                             }
                             ast::CreateFunctionBody::AsReturnExpr(_)
@@ -2023,6 +2049,9 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 TableConstraint::Check { .. } => {
                     _plan_err!("Check constraints are not currently supported")
                 }
+                TableConstraint::NotNull(_) => {
+                    _plan_err!("NOT NULL table constraints are not currently supported")
+                }
                 TableConstraint::Index { .. } => {
                     _plan_err!("Indexes are not currently supported")
                 }
@@ -2464,7 +2493,8 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                 partitions,
                 json_path,
                 sample,
-                index_hints,
+                index_directives,
+                inheritance,
             } => {
                 if alias
                     .as_ref()
@@ -2481,7 +2511,8 @@ impl<S: ContextProvider> SqlToRel<'_, S> {
                     || !partitions.is_empty()
                     || json_path.is_some()
                     || sample.is_some()
-                    || !index_hints.is_empty()
+                    || !index_directives.is_empty()
+                    || inheritance.is_some()
                 {
                     return not_impl_err!(
                         "MERGE target table modifiers are not supported"
